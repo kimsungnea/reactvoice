@@ -1,4 +1,3 @@
-// src/Components/SearchResults.js
 import React from 'react';
 
 const SearchResults = ({ places }) => {

@@ -4,7 +4,7 @@ import HospitalList from '../../Components/HospitalList';
 import KakaoMap from '../../Components/KakaoMap';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api'; // 백엔드 Spring API 주소
+const API_BASE_URL = 'http://localhost:8080/api';
 
 const MainPage = () => {
   const [symptom, setSymptom] = useState('');
@@ -14,9 +14,8 @@ const MainPage = () => {
   const [error, setError] = useState('');
   const [userLocation, setUserLocation] = useState({ lat: 37.5665, lng: 126.9780 });
 
-  // 거리 계산 함수 (Haversine 공식)
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371; // km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) ** 2 +
@@ -26,7 +25,6 @@ const MainPage = () => {
     return R * c;
   };
 
-  // 텍스트 읽어주는 TTS
   const speakText = (text) => {
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
@@ -34,7 +32,6 @@ const MainPage = () => {
     synth.speak(utter);
   };
 
-  // 증상 분석 및 병원 검색
   const analyzeSymptom = async (symptomText) => {
     setLoading(true);
     setError('');
@@ -72,7 +69,6 @@ const MainPage = () => {
     }
   };
 
-  // 병원 검색 API 호출
   const searchHospitals = async (department, lat, lng) => {
     try {
       const searchResponse = await axios.get(`${API_BASE_URL}/search-hospitals`, {
@@ -97,10 +93,9 @@ const MainPage = () => {
   return (
     <div className="main-page">
       <h1>🎤 증상 말하고 병원 찾기</h1>
-
       <VoiceRecorder onTranscript={analyzeSymptom} />
 
-      {loading && <p>⏳ 증상 분석 중입니다...</p>}
+      {loading && <p>⏳ 증상 분석 중입니다.</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {symptom && !loading && (

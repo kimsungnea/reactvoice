@@ -1,14 +1,26 @@
 // src/Pages/Map/MapPage.js
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import KakaoMap from '../../Components/KakaoMap';
 import Search from '../../Components/Search';
 import SearchResults from '../../Components/SearchResults';
 import NearbyHospitals from '../../Components/NearbyHospitals';
 
+import { useLocation } from 'react-router-dom';             // ✅ URL 파라미터 추출
+import queryString from 'query-string';           
+
 const MapPage = () => {
   const mapRef = useRef(null);
   const [keyword, setKeyword] = useState('');
   const [places, setPlaces] = useState([]);
+
+  const location = useLocation();
+  const { autoSearch } = queryString.parse(location.search); // ✅ URL 파라미터 추출
+
+  useEffect(() => {
+    if (autoSearch) {
+      setKeyword(autoSearch); // ✅ 진료과 자동 검색
+    }
+  }, [autoSearch]);
 
   const handleSearch = (term) => {
     setKeyword(term);
@@ -21,15 +33,13 @@ const MapPage = () => {
   return (
     <div>
       <h2>병원 검색</h2>
-      <Search onSearch={handleSearch} />
+      <Search onSearch={handleSearch} defaultKeyword={keyword} /> {/* ✅ defaultKeyword 전달 */}
       <KakaoMap keyword={keyword} mapRef={mapRef} onPlacesUpdate={handlePlacesUpdate} />
-      
-      {/* ✅ 검색어 없을 때만 자동 검색 */}
       {keyword === '' && <NearbyHospitals mapRef={mapRef} onPlacesUpdate={handlePlacesUpdate} />}
-
       <SearchResults places={places} />
     </div>
   );
 };
+
 
 export default MapPage;

@@ -1,8 +1,13 @@
-// src/components/Search.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const Search = ({ onSearch }) => {
-  const [input, setInput] = useState('');
+const Search = ({ onSearch, defaultKeyword = '' }) => {
+  const [input, setInput] = useState(defaultKeyword);
+
+  useEffect(() => {
+    if (defaultKeyword) {
+      onSearch(defaultKeyword);
+    }
+  }, [defaultKeyword]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

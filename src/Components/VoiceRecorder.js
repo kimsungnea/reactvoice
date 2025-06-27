@@ -7,7 +7,6 @@ const VoiceRecorder = ({ onTranscript }) => {
   const recognitionRef = useRef(null);
 
   useEffect(() => {
-    // 브라우저 호환성 체크
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert('이 브라우저는 음성 인식을 지원하지 않습니다.');
@@ -15,14 +14,14 @@ const VoiceRecorder = ({ onTranscript }) => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'ko-KR'; // 한국어
+    recognition.lang = 'ko-KR';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
       const result = event.results[0][0].transcript;
       setTranscript(result);
-      onTranscript(result); // 부모 컴포넌트에 전달
+      onTranscript(result);
     };
 
     recognition.onerror = (event) => {
@@ -33,30 +32,21 @@ const VoiceRecorder = ({ onTranscript }) => {
   }, [onTranscript]);
 
   const startRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.start();
-      setIsRecording(true);
-    }
+    recognitionRef.current?.start();
+    setIsRecording(true);
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    }
+    recognitionRef.current?.stop();
+    setIsRecording(false);
   };
 
   return (
     <div className="voice-recorder">
-      <button
-        onClick={isRecording ? stopRecording : startRecording}
-        className={isRecording ? 'recording' : ''}
-      >
+      <button onClick={isRecording ? stopRecording : startRecording}>
         {isRecording ? '🎙️ 녹음 중... 클릭하여 정지' : '🎤 클릭하여 증상 말하기'}
       </button>
-      {transcript && (
-        <p className="transcript">🗣 인식된 텍스트: <strong>{transcript}</strong></p>
-      )}
+      {transcript && <p>🗣 인식된 텍스트: <strong>{transcript}</strong></p>}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
@@ -20,7 +21,7 @@ function App() {
 
       <main style={{ padding: '20px' }}>
         <Routes>
-          <Route path="/main" element={<MainPage />} />                     {/* ✅ 수정 */}
+          <Route path="/main" element={<MainPage />} />
           <Route path="/map" element={<MapPage />} />
           <Route path="/nav" element={<NavigationPage />} />
           <Route path="/info" element={<InfoPage />} />

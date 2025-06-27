@@ -1,12 +1,18 @@
+// src/Components/HospitalList.js
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './HospitalList.css';
 
 const HospitalList = ({ hospitals, userLocation }) => {
-  // 병원 클릭 시 카카오맵 길찾기 열기
+  const navigate = useNavigate();
+
   const openNavigation = (hospital) => {
-    const { lat, lng, name } = hospital;
-    const url = `https://map.kakao.com/link/to/${encodeURIComponent(name)},${lat},${lng}`;
-    window.open(url, '_blank');
+    navigate('/nav', {
+      state: {
+        hospital,
+        userLocation,
+      },
+    });
   };
 
   return (
