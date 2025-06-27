@@ -1,0 +1,19 @@
+.voice-recorder {
+  margin-bottom: 20px;
+}
+
+.voice-recorder button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.voice-recorder .recording {
+  background-color: red;
+  color: white;
+}
+
+.transcript {
+  margin-top: 10px;
+  font-style: italic;
+}
