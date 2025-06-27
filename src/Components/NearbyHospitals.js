@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
-  const [radius, setRadius] = useState(1000); // 기본 반경 1km
-  const [places, setPlaces] = useState([]);   // 병원 리스트
-  const [userLocation, setUserLocation] = useState(null); // 내 위치 저장
+  const radiusSteps = [1000, 2000, 5000, 10000];
+  const [radius, setRadius] = useState(radiusSteps[0]);
+  const [places, setPlaces] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
   const navigate = useNavigate();
 
   // ✅ 내 위치 받아서 지도 중심 설정 + 병원 검색
@@ -29,7 +30,7 @@ const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
             title: '현재 위치',
           });
 
-          searchNearbyHospitals(lat, lng); // 내 위치 기준 병원 검색
+          searchNearbyHospitals(lat, lng, 0); // 첫 반경부터 검색
         },
         (error) => {
           console.warn('위치 정보 가져오기 실패:', error);
@@ -41,20 +42,23 @@ const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
   }, [mapRef]);
 
   // ✅ 병원 검색 함수
-  const searchNearbyHospitals = (lat, lng) => {
+  const searchNearbyHospitals = (lat, lng, stepIndex) => {
     const kakao = window.kakao;
     const map = mapRef.current;
     const ps = new kakao.maps.services.Places();
 
+    const currentRadius = radiusSteps[stepIndex];
+    setRadius(currentRadius);
+
     const center = new kakao.maps.LatLng(lat, lng);
     const options = {
       location: center,
-      radius: radius,
+      radius: currentRadius,
       sort: kakao.maps.services.SortBy.DISTANCE,
     };
 
     ps.keywordSearch('병원', (data, status) => {
-      if (status === kakao.maps.services.Status.OK) {
+      if (status === kakao.maps.services.Status.OK && data.length > 0) {
         const bounds = new kakao.maps.LatLngBounds();
 
         data.forEach((place) => {
@@ -65,19 +69,6 @@ const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
             position: pos,
           });
 
-          const infoWindow = new kakao.maps.InfoWindow({
-            content: `
-              <div style="padding:5px;font-size:13px;">
-                <strong>${place.place_name}</strong><br/>
-                ${place.address_name}
-              </div>
-            `,
-          });
-
-          kakao.maps.event.addListener(map, 'click', () => {
-            infoWindow.close();
-          });
-
           bounds.extend(pos);
         });
 
@@ -85,14 +76,21 @@ const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
         setPlaces(data);
         onPlacesUpdate(data);
       } else {
-        console.warn('병원 검색 실패:', status);
-        setPlaces([]);
-        onPlacesUpdate([]);
+        // 결과 없으면 반경을 키워서 재검색
+        const nextStep = stepIndex + 1;
+        if (nextStep < radiusSteps.length) {
+          console.log(`반경 ${currentRadius}m에 결과 없음 → ${radiusSteps[nextStep]}m로 재검색`);
+          searchNearbyHospitals(lat, lng, nextStep);
+        } else {
+          console.log(`반경 ${currentRadius}m까지 검색했지만 결과 없음`);
+          setPlaces([]);
+          onPlacesUpdate([]);
+        }
       }
     }, options);
   };
 
-  // ✅ 병원 클릭 시 네비게이션 페이지로 이동
+  // ✅ 병원 클릭 시 네비게이션 이동
   const handleClickHospital = (hospital) => {
     if (!userLocation) return;
 
@@ -119,17 +117,26 @@ const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
         value={radius}
         onChange={(e) => setRadius(Number(e.target.value))}
       >
-        <option value={500}>500m</option>
-        <option value={1000}>1km</option>
-        <option value={2000}>2km</option>
+        {radiusSteps.map((r) => (
+          <option key={r} value={r}>{r / 1000}km</option>
+        ))}
       </select>
 
-      {/* ✅ 내 위치로 지도 이동 버튼 */}
+      {/* ✅ 내 위치로 이동 버튼 (fresh geolocation) */}
       <button
         onClick={() => {
-          if (userLocation && mapRef.current) {
-            const moveLatLng = new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng);
-            mapRef.current.setCenter(moveLatLng);
+          if (navigator.geolocation && mapRef.current) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
+                mapRef.current.setCenter(moveLatLng);
+              },
+              (error) => {
+                console.warn('위치 정보 다시 가져오기 실패:', error);
+              }
+            );
           }
         }}
         style={{ marginLeft: '10px' }}
@@ -137,7 +144,7 @@ const NearbyHospitals = ({ mapRef, onPlacesUpdate }) => {
         📍 내 위치로 이동
       </button>
 
-      {/* ✅ 병원 리스트 */}
+      {/* ✅ 병원 버튼 리스트 */}
       <ul style={{ marginTop: '20px', listStyle: 'none', paddingLeft: 0 }}>
         {places.map((place, idx) => (
           <li key={idx} style={{ marginBottom: '10px' }}>

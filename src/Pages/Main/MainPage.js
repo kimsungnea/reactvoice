@@ -3,6 +3,7 @@ import VoiceRecorder from '../../Components/VoiceRecorder';
 import HospitalList from '../../Components/HospitalList';
 import KakaoMap from '../../Components/KakaoMap';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -13,6 +14,7 @@ const MainPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userLocation, setUserLocation] = useState({ lat: 37.5665, lng: 126.9780 });
+  const navigate = useNavigate();
 
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
@@ -45,7 +47,7 @@ const MainPage = () => {
       const recommendedDepartment = analyzeResponse.data.department;
       setDepartment(recommendedDepartment);
       speakText(`${recommendedDepartment} 진료과를 추천합니다.`);
-
+      navigate(`/map?autoSearch=${encodeURIComponent(recommendedDepartment)}`);
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
@@ -111,12 +113,11 @@ const MainPage = () => {
         </div>
       )}
 
-      {hospitals.length > 0 && (
-        <>
-          <HospitalList hospitals={hospitals} userLocation={userLocation} />
-          <KakaoMap hospitals={hospitals} userLocation={userLocation} />
-        </>
-      )}
+{hospitals.length > 0 && (
+  <>
+<KakaoMap hospitals={hospitals} userLocation={userLocation} />
+  </>
+)}
     </div>
   );
 };

@@ -6,7 +6,7 @@ const KakaoMap = ({ keyword, mapRef, onPlacesUpdate }) => {
     const loadMap = () => {
       const kakao = window.kakao;
       const container = document.getElementById('map');
-      const defaultCenter = new kakao.maps.LatLng(37.5665, 126.9780); // 서울
+      const defaultCenter = new kakao.maps.LatLng(37.5665, 126.9780);
 
       const options = {
         center: defaultCenter,
@@ -28,52 +28,21 @@ const KakaoMap = ({ keyword, mapRef, onPlacesUpdate }) => {
             const marker = new kakao.maps.Marker({
               map,
               position: userPosition,
-              title: '현재 위치',
               image: new kakao.maps.MarkerImage(
                 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
                 new kakao.maps.Size(24, 35)
               ),
             });
 
-            // ✅ 인포윈도우
+            // ✅ 현재 위치 인포윈도우
             const infowindow = new kakao.maps.InfoWindow({
               content: '<div style="padding:5px;font-size:12px;">📍 현재 위치</div>',
+              position: userPosition,
+              removable: false,
             });
             infowindow.open(map, marker);
 
-            // ✅ 사용자 오버레이 버튼
-            const overlayContent = `
-              <div style="
-                position:absolute;
-                bottom:20px;
-                right:10px;
-                z-index:100;
-                cursor:pointer;
-                background:#fff;
-                padding:5px 10px;
-                border:1px solid #888;
-                border-radius:4px;
-                font-size:13px;
-                box-shadow: 0px 2px 5px rgba(0,0,0,0.3);
-              ">
-                <span id="moveToCurrent">📍 현재 위치</span>
-              </div>
-            `;
-            const customOverlay = new kakao.maps.CustomOverlay({
-              position: userPosition,
-              content: overlayContent,
-              yAnchor: 1,
-            });
-            customOverlay.setMap(map);
-
-            setTimeout(() => {
-              const btn = document.getElementById('moveToCurrent');
-              if (btn) {
-                btn.onclick = () => {
-                  map.setCenter(userPosition);
-                };
-              }
-            }, 300);
+            // ✅ 오버레이 버튼 제거 (아예 X)
           },
           (err) => {
             console.warn('위치 접근 실패:', err);
@@ -84,7 +53,7 @@ const KakaoMap = ({ keyword, mapRef, onPlacesUpdate }) => {
       }
     };
 
-    // ✅ 스크립트 로드
+    // 스크립트 로드
     if (!window.kakao || !window.kakao.maps) {
       const script = document.createElement('script');
       script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.REACT_APP_KAKAO_MAP_KEY}&autoload=false&libraries=services`;
@@ -112,7 +81,6 @@ const KakaoMap = ({ keyword, mapRef, onPlacesUpdate }) => {
         data.forEach((place) => {
           const pos = new kakao.maps.LatLng(place.y, place.x);
 
-          // ✅ 병원 마커
           const marker = new kakao.maps.Marker({
             map,
             position: pos,
@@ -140,7 +108,10 @@ const KakaoMap = ({ keyword, mapRef, onPlacesUpdate }) => {
   }, [keyword]);
 
   return (
-    <div id="map" style={{ width: '100%', height: '400px', marginTop: '20px' }} />
+    <div
+      id="map"
+      style={{ width: '100%', height: '400px', marginTop: '20px' }}
+    />
   );
 };
 

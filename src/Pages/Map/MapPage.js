@@ -31,13 +31,13 @@ const MapPage = () => {
   };
 
   return (
-    <div>
-      <h2>병원 검색</h2>
-      <Search onSearch={handleSearch} defaultKeyword={keyword} /> {/* ✅ defaultKeyword 전달 */}
-      <KakaoMap keyword={keyword} mapRef={mapRef} onPlacesUpdate={handlePlacesUpdate} />
-      {keyword === '' && <NearbyHospitals mapRef={mapRef} onPlacesUpdate={handlePlacesUpdate} />}
-      <SearchResults places={places} />
-    </div>
+<div>
+  <h2>병원 검색</h2>
+  <Search onSearch={handleSearch} defaultKeyword={keyword} />
+  <KakaoMap keyword={keyword} mapRef={mapRef} onPlacesUpdate={handlePlacesUpdate} />
+  <NearbyHospitals mapRef={mapRef} onPlacesUpdate={handlePlacesUpdate} keyword={keyword} />
+  {/* <SearchResults places={places} /> */}
+</div>
   );
 };
 
