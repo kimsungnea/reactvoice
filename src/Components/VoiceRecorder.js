@@ -44,9 +44,9 @@ const VoiceRecorder = ({ onTranscript }) => {
   return (
     <div className="voice-recorder">
       <button onClick={isRecording ? stopRecording : startRecording}>
-        {isRecording ? '🎙️ 녹음 중... 클릭하여 정지' : '🎤 클릭하여 증상 말하기'}
+        {isRecording ? '녹음 중... 클릭하여 정지' : '클릭하여 증상 말하기'}
       </button>
-      {transcript && <p>🗣 인식된 텍스트: <strong>{transcript}</strong></p>}
+      {transcript && <p>인식된 텍스트: <strong>{transcript}</strong></p>}
     </div>
   );
 };

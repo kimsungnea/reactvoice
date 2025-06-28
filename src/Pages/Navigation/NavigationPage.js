@@ -1,7 +1,7 @@
 // src/Pages/Navigation/NavigationPage.js
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const NavigationPage = () => {
   const location = useLocation();
@@ -11,6 +11,8 @@ const NavigationPage = () => {
   const polylineRef = useRef(null);
   const userMarkerRef = useRef(null);
   const [eta, setEta] = useState(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!hospital || !userLocation || !window.kakao) return;
@@ -128,12 +130,12 @@ const NavigationPage = () => {
   }, [hospital, userLocation]);
 
   if (!hospital || !userLocation) {
-    return <p>❗ 병원 또는 위치 정보가 없습니다.</p>;
+    return <p> 병원 또는 위치 정보가 없습니다.</p>;
   }
 
   return (
     <div>
-      <h2>🧭 {hospital.name} 길찾기</h2>
+      <h2> {hospital.name} 길찾기</h2>
       <div
         id="nav-map"
         style={{
@@ -144,10 +146,23 @@ const NavigationPage = () => {
         }}
       ></div>
       {eta && (
-        <div style={{ marginTop: '15px', fontSize: '14px' }}>
-          <strong>예상 거리:</strong> {eta.distance} km<br />
-          <strong>예상 소요 시간:</strong> {eta.duration} 분
-        </div>
+<div style={{ marginTop: '15px', fontSize: '14px' }}>
+  <strong>예상 거리:</strong> {eta.distance} km<br />
+  <strong>예상 소요 시간:</strong> {eta.duration} 분
+  <button
+    style={{
+      marginTop: '10px',
+      padding: '8px 12px',
+      border: '1px solid #ddd',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      backgroundColor: '#f0f0f0',
+    }}
+    onClick={() => navigate('/')}
+  >
+    처음으로 돌아가기
+  </button>
+</div>
       )}
     </div>
   );

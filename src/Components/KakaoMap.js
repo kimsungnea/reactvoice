@@ -7,7 +7,7 @@ const KakaoMap = ({ recommendedHospitals = [], keyword, mapRef, userLocation }) 
       const container = document.getElementById('map');
       if (!container) return;
 
-      // 👉 userLocation가 없으면 fallback (서울)
+      //userLocation가 없으면 fallback (서울)
       let centerPos;
       if (
         userLocation &&

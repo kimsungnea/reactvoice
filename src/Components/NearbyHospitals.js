@@ -38,7 +38,7 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
       {/* 추천 병원 버튼 */}
       {recommendedHospitals.length > 0 && (
         <>
-          <h3>🏥 추천 병원</h3>
+          <h3> 추천 병원</h3>
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {recommendedHospitals.map((h, idx) => (
               <li key={idx} style={{ marginBottom: '10px' }}>
@@ -54,7 +54,7 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
                 >
                   <strong>{h.placeName}</strong><br />
                   {h.addressName}<br />
-                  {h.phone && <>📞 {h.phone}</>}
+                  {h.phone && <> {h.phone}</>}
                 </button>
               </li>
             ))}

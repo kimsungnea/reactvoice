@@ -9,11 +9,11 @@ const MainPage = () => {
   const [symptom, setSymptom] = useState('');
   const [department, setDepartment] = useState('');
   const [recommendedHospitals, setRecommendedHospitals] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);  // ⭐️ 변경
+  const [userLocation, setUserLocation] = useState(null);  // 변경
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ⭐️ 페이지 진입 시 내 위치 우선
+  // 페이지 진입 시 내 위치 우선
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -71,9 +71,9 @@ const MainPage = () => {
 
   return (
     <div>
-      <h1>🎤 증상 말하고 병원 찾기</h1>
+      <h1>증상 말하고 병원 찾기</h1>
       <VoiceRecorder onTranscript={analyzeSymptom} />
-      {loading && <p>⏳ 증상 분석 중...</p>}
+      {loading && <p>⏳증상 분석 중...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {department && <h3>추천 진료과: {department}</h3>}
 
