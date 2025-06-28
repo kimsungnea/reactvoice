@@ -1,3 +1,4 @@
+// NavigationPage.js - 완전한 버전 (모든 기능 포함)
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './NavigationPage.css';
@@ -19,6 +20,10 @@ const NavigationPage = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
+    console.log('🧭 NavigationPage 초기화');
+    console.log('병원 정보:', hospital);
+    console.log('사용자 위치:', userLocation);
+
     if (!hospital || !userLocation) {
       setError('병원 또는 위치 정보가 없습니다.');
       return;
@@ -29,6 +34,10 @@ const NavigationPage = () => {
       return;
     }
 
+    initializeMap();
+  }, [hospital, userLocation]);
+
+  const initializeMap = () => {
     const kakao = window.kakao;
     const container = document.getElementById('nav-map');
     
@@ -74,13 +83,13 @@ const NavigationPage = () => {
       removable: false,
     });
 
-    // 실시간 위치 추적 시작
+    // 🔧 자동으로 실시간 위치 추적 시작
     startLocationTracking();
 
     return () => {
       stopLocationTracking();
     };
-  }, [hospital, userLocation]);
+  };
 
   const startLocationTracking = () => {
     if (!navigator.geolocation) {
@@ -90,6 +99,7 @@ const NavigationPage = () => {
 
     setIsTracking(true);
     setError('');
+    console.log('📍 실시간 위치 추적 시작');
 
     const options = {
       enableHighAccuracy: true,
@@ -110,8 +120,10 @@ const NavigationPage = () => {
       watchIdRef.current = null;
     }
     setIsTracking(false);
+    console.log('📍 실시간 위치 추적 중지');
   };
 
+  // 🔧 핵심 기능: 실시간 위치 업데이트 및 경로 그리기
   const updateLocation = async (position) => {
     const userLat = position.coords.latitude;
     const userLng = position.coords.longitude;
@@ -152,8 +164,14 @@ const NavigationPage = () => {
       userMarkerRef.current.setPosition(userPos);
     }
 
-    // 경로 업데이트
+    // 🔧 경로 업데이트 (가장 중요한 기능!)
     await updateRoute(newUserLocation);
+
+    // 🔧 지도 범위 자동 조정
+    const bounds = new kakao.maps.LatLngBounds();
+    bounds.extend(userPos);
+    bounds.extend(new kakao.maps.LatLng(hospital.lat, hospital.lng));
+    mapRef.current.setBounds(bounds);
   };
 
   const handleLocationError = (error) => {
@@ -176,6 +194,7 @@ const NavigationPage = () => {
     setIsTracking(false);
   };
 
+  // 🔧 실시간 경로 업데이트 (카카오 모빌리티 API 사용)
   const updateRoute = async (currentPos) => {
     if (!process.env.REACT_APP_KAKAO_REST_API_KEY) {
       console.warn('카카오 REST API 키가 설정되지 않았습니다.');
@@ -183,8 +202,11 @@ const NavigationPage = () => {
     }
 
     try {
+      console.log('🛣️ 경로 업데이트 중...');
+      
+      // 카카오 모빌리티 길찾기 API 호출
       const response = await fetch(
-        `https://apis-navi.kakaomobility.com/v1/directions?origin=${currentPos.lng},${currentPos.lat}&destination=${hospital.lng},${hospital.lat}&summary=true`,
+        `https://apis-navi.kakaomobility.com/v1/directions?origin=${currentPos.lng},${currentPos.lat}&destination=${hospital.lng},${hospital.lat}`,
         {
           headers: {
             Authorization: `KakaoAK ${process.env.REACT_APP_KAKAO_REST_API_KEY}`,
@@ -200,11 +222,12 @@ const NavigationPage = () => {
 
       if (data.routes && data.routes[0]) {
         const section = data.routes[0].sections[0];
-        
-        // 경로 그리기
-        if (section.roads) {
+        const roads = section.roads;
+
+        // 🔧 실제 도로망 경로 좌표 그리기
+        if (roads && roads.length > 0) {
           const linePath = [];
-          section.roads.forEach((road) => {
+          roads.forEach((road) => {
             for (let i = 0; i < road.vertexes.length; i += 2) {
               const lng = road.vertexes[i];
               const lat = road.vertexes[i + 1];
@@ -212,6 +235,7 @@ const NavigationPage = () => {
             }
           });
 
+          // 기존 경로 제거 후 새 경로 그리기
           if (polylineRef.current) {
             polylineRef.current.setMap(null);
           }
@@ -224,20 +248,21 @@ const NavigationPage = () => {
             strokeOpacity: 0.8,
             strokeStyle: 'solid',
           });
+
+          console.log('✅ 경로 그리기 완료');
         }
 
         // ETA 정보 업데이트
         setEta({
-          distance: (section.distance / 1000).toFixed(1),
-          duration: Math.ceil(section.duration / 60),
-          roadName: section.roads?.[0]?.name || '경로',
+          distance: (section.distance / 1000).toFixed(1), // km
+          duration: Math.ceil(section.duration / 60), // 분
+          roadName: roads?.[0]?.name || '경로',
         });
 
-        // 지도 범위 조정
-        const bounds = new window.kakao.maps.LatLngBounds();
-        bounds.extend(new window.kakao.maps.LatLng(currentPos.lat, currentPos.lng));
-        bounds.extend(new window.kakao.maps.LatLng(hospital.lat, hospital.lng));
-        mapRef.current.setBounds(bounds);
+        console.log('📊 ETA 업데이트:', {
+          distance: (section.distance / 1000).toFixed(1),
+          duration: Math.ceil(section.duration / 60)
+        });
       }
     } catch (err) {
       console.warn('길찾기 요청 실패:', err);
@@ -274,6 +299,23 @@ const NavigationPage = () => {
       } catch (err) {
         alert('공유 기능을 사용할 수 없습니다.');
       }
+    }
+  };
+
+  // 수동 경로 새로고침
+  const handleRefreshRoute = () => {
+    if (currentLocation) {
+      updateRoute(currentLocation);
+    }
+  };
+
+  // 지도 중심으로 이동
+  const handleCenterMap = () => {
+    if (mapRef.current && currentLocation) {
+      const bounds = new window.kakao.maps.LatLngBounds();
+      bounds.extend(new window.kakao.maps.LatLng(currentLocation.lat, currentLocation.lng));
+      bounds.extend(new window.kakao.maps.LatLng(hospital.lat, hospital.lng));
+      mapRef.current.setBounds(bounds);
     }
   };
 
@@ -344,7 +386,7 @@ const NavigationPage = () => {
           </div>
           <div className="tracking-status">
             {isTracking ? (
-              <span className="tracking-active">🟢 추적 중</span>
+              <span className="tracking-active">🟢 실시간 추적 중</span>
             ) : (
               <span className="tracking-inactive">🔴 추적 정지</span>
             )}
@@ -388,13 +430,13 @@ const NavigationPage = () => {
           {isTracking ? '📍 추적 중지' : '📍 추적 시작'}
         </button>
         <button 
-          onClick={() => updateRoute(currentLocation)}
+          onClick={handleRefreshRoute}
           className="control-btn"
         >
           🔄 경로 새로고침
         </button>
         <button 
-          onClick={() => mapRef.current?.setLevel(3)}
+          onClick={handleCenterMap}
           className="control-btn"
         >
           🎯 중심으로
@@ -410,6 +452,29 @@ const NavigationPage = () => {
           🚨 응급상황 119 신고
         </button>
       </div>
+
+      {/* 디버깅 정보 (개발 모드에서만) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          padding: '10px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          maxWidth: '250px',
+          zIndex: 1000
+        }}>
+          <div><strong>🔧 네비게이션 상태:</strong></div>
+          <div>추적: {isTracking ? '✅' : '❌'}</div>
+          <div>지도: {mapLoaded ? '✅' : '❌'}</div>
+          <div>ETA: {eta ? '✅' : '❌'}</div>
+          <div>경로: {polylineRef.current ? '✅' : '❌'}</div>
+          <div>현재 위치: {currentLocation ? `${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}` : '❌'}</div>
+        </div>
+      )}
     </div>
   );
 };

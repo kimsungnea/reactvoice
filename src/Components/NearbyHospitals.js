@@ -1,3 +1,4 @@
+// NearbyHospitals.js - 네비게이션 버튼 문제 수정 (버스 기능 제외)
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './NearbyHospitals.css';
@@ -41,26 +42,71 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
     return (R * c).toFixed(1);
   };
 
+  // 🔧 수정된 네비게이션 함수 - 데이터 정규화 및 검증 강화
   const handleNavigation = (hospital) => {
-    navigate('/navigation', {
-      state: {
-        hospital: {
-          name: hospital.place_name || hospital.placeName,
-          lat: parseFloat(hospital.y),
-          lng: parseFloat(hospital.x),
-          address: hospital.road_address_name || hospital.address_name || hospital.addressName,
-          phone: hospital.phone
+    console.log('🧭 네비게이션 시작:', hospital); // 디버깅용
+
+    // 병원 데이터 정규화 (추천 병원과 일반 병원 구조가 다를 수 있음)
+    const normalizedHospital = {
+      name: hospital.place_name || hospital.placeName || hospital.name || '병원명 없음',
+      lat: parseFloat(hospital.y || hospital.lat || 0),
+      lng: parseFloat(hospital.x || hospital.lng || 0),
+      address: hospital.road_address_name || hospital.address_name || hospital.addressName || hospital.address || '주소 없음',
+      phone: hospital.phone || ''
+    };
+
+    // 데이터 유효성 검사
+    if (!normalizedHospital.lat || !normalizedHospital.lng || normalizedHospital.lat === 0 || normalizedHospital.lng === 0) {
+      alert('병원 위치 정보가 없어 길찾기를 할 수 없습니다.');
+      console.error('❌ 병원 좌표 오류:', normalizedHospital);
+      return;
+    }
+
+    if (!userLocation || !userLocation.lat || !userLocation.lng) {
+      alert('현재 위치 정보가 없어 길찾기를 할 수 없습니다.');
+      console.error('❌ 사용자 위치 오류:', userLocation);
+      return;
+    }
+
+    console.log('✅ 정규화된 병원 데이터:', normalizedHospital);
+    console.log('✅ 사용자 위치:', userLocation);
+
+    try {
+      // NavigationPage로 이동
+      navigate('/navigation', {
+        state: {
+          hospital: normalizedHospital,
+          userLocation: userLocation,
         },
-        userLocation,
-      },
-    });
+      });
+      console.log('✅ 네비게이션 페이지로 이동 성공');
+    } catch (error) {
+      console.error('❌ 네비게이션 실패:', error);
+      alert('길찾기 페이지로 이동 중 오류가 발생했습니다.');
+    }
   };
 
+  // 수정된 전화 함수
   const handleCall = (phone) => {
-    if (phone) {
-      window.location.href = `tel:${phone}`;
-    } else {
+    console.log('📞 전화 시도:', phone);
+    
+    if (!phone || phone.trim() === '') {
       alert('전화번호가 등록되지 않은 병원입니다.');
+      return;
+    }
+
+    // 전화번호 정리 (공백, 하이픈 제거 후 다시 추가)
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 9) {
+      alert('올바르지 않은 전화번호입니다.');
+      return;
+    }
+
+    try {
+      window.location.href = `tel:${cleanPhone}`;
+    } catch (error) {
+      console.error('전화 연결 실패:', error);
+      alert('전화 연결에 실패했습니다.');
     }
   };
 
@@ -75,21 +121,21 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
           </div>
           <div className="hospitals-grid">
             {recommendedHospitals.map((hospital, idx) => (
-              <div key={idx} className="hospital-card recommended">
+              <div key={`recommended-${idx}`} className="hospital-card recommended">
                 <div className="hospital-info">
                   <h3 className="hospital-name">
                     <span className="star-badge">⭐</span>
-                    {hospital.placeName}
+                    {hospital.placeName || hospital.name || '병원명 없음'}
                   </h3>
                   <p className="hospital-address">
-                    📍 {hospital.addressName}
+                    📍 {hospital.addressName || hospital.address || '주소 없음'}
                   </p>
                   {hospital.phone && (
                     <p className="hospital-phone">
                       📞 {hospital.phone}
                     </p>
                   )}
-                  {userLocation && (
+                  {userLocation && hospital.lat && hospital.lng && (
                     <p className="hospital-distance">
                       🚶‍♂️ 약 {calculateDistance(
                         userLocation.lat, userLocation.lng,
@@ -153,7 +199,10 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
             <p>{error}</p>
             <button 
               className="retry-btn"
-              onClick={() => setRadius(radius)} // 재검색 트리거
+              onClick={() => {
+                console.log('🔄 재검색 시도');
+                setRadius(radius); // 재검색 트리거
+              }}
             >
               다시 시도
             </button>
@@ -171,7 +220,7 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
         {!loading && nearby.length > 0 && (
           <div className="hospitals-grid">
             {nearby.map((hospital, idx) => (
-              <div key={idx} className="hospital-card">
+              <div key={`nearby-${idx}-${hospital.id}`} className="hospital-card">
                 <div className="hospital-info">
                   <h3 className="hospital-name">
                     {hospital.place_name}
@@ -201,7 +250,10 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
                 <div className="hospital-actions">
                   <button 
                     className="action-btn navigation-btn"
-                    onClick={() => handleNavigation(hospital)}
+                    onClick={() => {
+                      console.log('🧭 일반 병원 네비게이션 클릭:', hospital);
+                      handleNavigation(hospital);
+                    }}
                   >
                     🧭 길찾기
                   </button>
@@ -229,13 +281,40 @@ const NearbyHospitals = ({ recommendedHospitals = [], userLocation, mapRef }) =>
             <p>생명이 위급한 상황에서는 즉시 119에 신고하세요</p>
             <button 
               className="emergency-btn"
-              onClick={() => window.location.href = 'tel:119'}
+              onClick={() => {
+                console.log('🚨 119 신고 버튼 클릭');
+                window.location.href = 'tel:119';
+              }}
             >
               🚑 119 신고
             </button>
           </div>
         </div>
       </section>
+
+      {/* 디버깅 정보 (개발 모드에서만 표시) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          background: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          padding: '10px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          maxWidth: '300px',
+          zIndex: 1000
+        }}>
+          <div><strong>🔧 디버깅 정보:</strong></div>
+          <div>추천 병원: {recommendedHospitals.length}개</div>
+          <div>주변 병원: {nearby.length}개</div>
+          <div>사용자 위치: {userLocation ? `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}` : '❌ 없음'}</div>
+          <div>반경: {radius}m</div>
+          <div>로딩: {loading ? '✅' : '❌'}</div>
+          <div>에러: {error || '없음'}</div>
+        </div>
+      )}
     </div>
   );
 };
