@@ -1,117 +1,64 @@
-// src/Components/KakaoMap.js
 import React, { useEffect } from 'react';
 
-const KakaoMap = ({ keyword, mapRef, onPlacesUpdate }) => {
+const KakaoMap = ({ recommendedHospitals = [], keyword, mapRef, userLocation }) => {
   useEffect(() => {
+    // ✅ userLocation null 방어
+    if (
+      !userLocation ||
+      typeof userLocation.lat !== "number" ||
+      typeof userLocation.lng !== "number"
+    ) {
+      console.warn("⛔ userLocation이 올바르지 않습니다.", userLocation);
+      return;
+    }
+
     const loadMap = () => {
       const kakao = window.kakao;
       const container = document.getElementById('map');
-      const defaultCenter = new kakao.maps.LatLng(37.5665, 126.9780);
+      if (!container) return;
 
-      const options = {
-        center: defaultCenter,
+      const centerPos = new kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+
+      const map = new kakao.maps.Map(container, {
+        center: centerPos,
         level: 3,
-      };
-      const map = new kakao.maps.Map(container, options);
+      });
       mapRef.current = map;
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const userPosition = new kakao.maps.LatLng(lat, lng);
+      // 내 위치 마커
+      new kakao.maps.Marker({
+        position: centerPos,
+        map,
+        title: '내 위치',
+      });
 
-            map.setCenter(userPosition);
-
-            // ✅ 현재 위치 마커
-            const marker = new kakao.maps.Marker({
+      // 추천 병원 마커
+      if (recommendedHospitals.length > 0) {
+        recommendedHospitals.forEach((h) => {
+          if (typeof h.y === "number" && typeof h.x === "number") {
+            new kakao.maps.Marker({
               map,
-              position: userPosition,
-              image: new kakao.maps.MarkerImage(
-                'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-                new kakao.maps.Size(24, 35)
-              ),
+              position: new kakao.maps.LatLng(h.y, h.x),
+              title: h.placeName,
             });
-
-            // ✅ 현재 위치 인포윈도우
-            const infowindow = new kakao.maps.InfoWindow({
-              content: '<div style="padding:5px;font-size:12px;">📍 현재 위치</div>',
-              position: userPosition,
-              removable: false,
-            });
-            infowindow.open(map, marker);
-
-            // ✅ 오버레이 버튼 제거 (아예 X)
-          },
-          (err) => {
-            console.warn('위치 접근 실패:', err);
           }
-        );
-      } else {
-        console.warn('이 브라우저는 위치 정보를 지원하지 않습니다.');
+        });
       }
     };
 
-    // 스크립트 로드
     if (!window.kakao || !window.kakao.maps) {
       const script = document.createElement('script');
       script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.REACT_APP_KAKAO_MAP_KEY}&autoload=false&libraries=services`;
       script.async = true;
-      script.onload = () => {
-        window.kakao.maps.load(loadMap);
-      };
+      script.onload = () => window.kakao.maps.load(loadMap);
       document.head.appendChild(script);
     } else {
       window.kakao.maps.load(loadMap);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!window.kakao || !mapRef.current || !keyword) return;
-
-    const kakao = window.kakao;
-    const map = mapRef.current;
-    const ps = new kakao.maps.services.Places();
-
-    ps.keywordSearch(keyword, (data, status) => {
-      if (status === kakao.maps.services.Status.OK) {
-        const bounds = new kakao.maps.LatLngBounds();
-
-        data.forEach((place) => {
-          const pos = new kakao.maps.LatLng(place.y, place.x);
-
-          const marker = new kakao.maps.Marker({
-            map,
-            position: pos,
-            title: place.place_name,
-          });
-
-          const infowindow = new kakao.maps.InfoWindow({
-            content: `<div style="padding:5px;font-size:13px;"><strong>${place.place_name}</strong></div>`,
-          });
-
-          kakao.maps.event.addListener(marker, 'click', () => {
-            infowindow.open(map, marker);
-          });
-
-          bounds.extend(pos);
-        });
-
-        map.setBounds(bounds);
-        onPlacesUpdate(data);
-      } else {
-        console.warn('병원 검색 실패:', status);
-        onPlacesUpdate([]);
-      }
-    });
-  }, [keyword]);
+  }, [recommendedHospitals, keyword, userLocation]);
 
   return (
-    <div
-      id="map"
-      style={{ width: '100%', height: '400px', marginTop: '20px' }}
-    />
+    <div id="map" style={{ width: '100%', height: '400px', marginTop: '20px' }} />
   );
 };
 

@@ -11,13 +11,6 @@ import SettingsPage from './Pages/Settings/SettingsPage';
 function App() {
   return (
     <Router>
-      <nav style={{ padding: '10px', background: '#eee', display: 'flex', gap: '10px' }}>
-        <Link to="/main"><button>메인 페이지(음성)</button></Link>
-        <Link to="/map"><button>지도 검색</button></Link>
-        <Link to="/nav"><button>길찾기</button></Link>
-        <Link to="/info"><button>병원 정보</button></Link>
-        <Link to="/settings"><button>설정</button></Link>
-      </nav>
 
       <main style={{ padding: '20px' }}>
         <Routes>
@@ -26,7 +19,7 @@ function App() {
           <Route path="/nav" element={<NavigationPage />} />
           <Route path="/info" element={<InfoPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<MapPage />} />
+          <Route path="*" element={<MainPage />} />
         </Routes>
       </main>
     </Router>

@@ -1,123 +1,69 @@
 import React, { useState } from 'react';
 import VoiceRecorder from '../../Components/VoiceRecorder';
-import HospitalList from '../../Components/HospitalList';
-import KakaoMap from '../../Components/KakaoMap';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import MapPage from '../Map/MapPage';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
 const MainPage = () => {
   const [symptom, setSymptom] = useState('');
   const [department, setDepartment] = useState('');
-  const [hospitals, setHospitals] = useState([]);
+  const [recommendedHospitals, setRecommendedHospitals] = useState([]);
+  const [userLocation, setUserLocation] = useState({ lat: 37.5665, lng: 126.9780 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [userLocation, setUserLocation] = useState({ lat: 37.5665, lng: 126.9780 });
-  const navigate = useNavigate();
-
-  const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const speakText = (text) => {
-    const synth = window.speechSynthesis;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ko-KR';
-    synth.speak(utter);
-  };
 
   const analyzeSymptom = async (symptomText) => {
-    setLoading(true);
-    setError('');
-    setSymptom(symptomText);
-
     try {
-      const analyzeResponse = await axios.post(`${API_BASE_URL}/analyze-symptom`, {
-        symptom: symptomText
-      });
+      setLoading(true);
+      setSymptom(symptomText);
 
-      const recommendedDepartment = analyzeResponse.data.department;
+      // GPT 분석
+      const res = await axios.post(`${API_BASE_URL}/analyze-symptom`, { symptom: symptomText });
+      const recommendedDepartment = res.data.department;
       setDepartment(recommendedDepartment);
-      speakText(`${recommendedDepartment} 진료과를 추천합니다.`);
-      navigate(`/map?autoSearch=${encodeURIComponent(recommendedDepartment)}`);
+
+      // Spring 검색
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             setUserLocation({ lat, lng });
-            await searchHospitals(recommendedDepartment, lat, lng);
+
+            const response = await axios.get(`${API_BASE_URL}/search-hospitals`, {
+              params: { department: recommendedDepartment, lat, lng }
+            });
+            setRecommendedHospitals(response.data);
           },
           async () => {
-            await searchHospitals(recommendedDepartment, userLocation.lat, userLocation.lng);
+            const response = await axios.get(`${API_BASE_URL}/search-hospitals`, {
+              params: { department: recommendedDepartment, lat: userLocation.lat, lng: userLocation.lng }
+            });
+            setRecommendedHospitals(response.data);
           }
         );
-      } else {
-        await searchHospitals(recommendedDepartment, userLocation.lat, userLocation.lng);
       }
-    } catch (err) {
-      console.error('분석 오류:', err);
-      setError('증상 분석 중 오류가 발생했습니다.');
+    } catch (e) {
+      console.error(e);
+      setError('분석 또는 병원 검색 실패');
     } finally {
       setLoading(false);
     }
   };
 
-  const searchHospitals = async (department, lat, lng) => {
-    try {
-      const searchResponse = await axios.get(`${API_BASE_URL}/search-hospitals`, {
-        params: { department, lat, lng }
-      });
-
-      const sorted = searchResponse.data
-        .map(h => ({
-          ...h,
-          distance: calculateDistance(lat, lng, h.lat, h.lng)
-        }))
-        .sort((a, b) => a.distance - b.distance);
-
-      setHospitals(sorted);
-      speakText(`${sorted.length}개의 병원을 찾았습니다. 가까운 순으로 정렬합니다.`);
-    } catch (err) {
-      console.error('병원 검색 오류:', err);
-      setError('병원 검색 중 오류가 발생했습니다.');
-    }
-  };
-
   return (
-    <div className="main-page">
+    <div>
       <h1>🎤 증상 말하고 병원 찾기</h1>
       <VoiceRecorder onTranscript={analyzeSymptom} />
-
-      {loading && <p>⏳ 증상 분석 중입니다.</p>}
+      {loading && <p>⏳ 증상 분석 중...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      {department && <h3>추천 진료과: {department}</h3>}
 
-      {symptom && !loading && (
-        <div className="result-section">
-          <h3>📝 입력한 증상:</h3>
-          <p>{symptom}</p>
-          {department && (
-            <>
-              <h3>🔍 추천 진료과:</h3>
-              <p>{department}</p>
-            </>
-          )}
-        </div>
-      )}
-
-{hospitals.length > 0 && (
-  <>
-<KakaoMap hospitals={hospitals} userLocation={userLocation} />
-  </>
-)}
+      <MapPage
+        recommendedHospitals={recommendedHospitals}
+        userLocation={userLocation}
+      />
     </div>
   );
 };
