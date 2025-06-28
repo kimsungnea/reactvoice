@@ -2,22 +2,23 @@ import React, { useEffect } from 'react';
 
 const KakaoMap = ({ recommendedHospitals = [], keyword, mapRef, userLocation }) => {
   useEffect(() => {
-    // ✅ userLocation null 방어
-    if (
-      !userLocation ||
-      typeof userLocation.lat !== "number" ||
-      typeof userLocation.lng !== "number"
-    ) {
-      console.warn("⛔ userLocation이 올바르지 않습니다.", userLocation);
-      return;
-    }
-
     const loadMap = () => {
       const kakao = window.kakao;
       const container = document.getElementById('map');
       if (!container) return;
 
-      const centerPos = new kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+      // 👉 userLocation가 없으면 fallback (서울)
+      let centerPos;
+      if (
+        userLocation &&
+        typeof userLocation.lat === "number" &&
+        typeof userLocation.lng === "number"
+      ) {
+        centerPos = new kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+      } else {
+        console.warn("⛔ userLocation이 없으므로 서울 기본 좌표로 대체");
+        centerPos = new kakao.maps.LatLng(37.5665, 126.9780); // 서울시청
+      }
 
       const map = new kakao.maps.Map(container, {
         center: centerPos,
@@ -25,12 +26,18 @@ const KakaoMap = ({ recommendedHospitals = [], keyword, mapRef, userLocation }) 
       });
       mapRef.current = map;
 
-      // 내 위치 마커
-      new kakao.maps.Marker({
-        position: centerPos,
-        map,
-        title: '내 위치',
-      });
+      // 내 위치 마커 (있을 때만)
+      if (
+        userLocation &&
+        typeof userLocation.lat === "number" &&
+        typeof userLocation.lng === "number"
+      ) {
+        new kakao.maps.Marker({
+          position: centerPos,
+          map,
+          title: '내 위치',
+        });
+      }
 
       // 추천 병원 마커
       if (recommendedHospitals.length > 0) {
@@ -58,7 +65,10 @@ const KakaoMap = ({ recommendedHospitals = [], keyword, mapRef, userLocation }) 
   }, [recommendedHospitals, keyword, userLocation]);
 
   return (
-    <div id="map" style={{ width: '100%', height: '400px', marginTop: '20px' }} />
+    <div
+      id="map"
+      style={{ width: '100%', height: '400px', marginTop: '20px' }}
+    />
   );
 };
 
