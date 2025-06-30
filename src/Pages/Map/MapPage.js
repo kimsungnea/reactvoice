@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import KakaoMap from '../../Components/KakaoMap';
-import NearbyHospitals from '../../Components/NearbyHospitals';
+import KakaoMap from '../../components/KakaoMap';
+import NearbyHospitals from '../../components/NearbyHospitals';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
 

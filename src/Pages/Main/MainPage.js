@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import VoiceRecorder from '../../Components/VoiceRecorder';
+import VoiceRecorder from '../../components/VoiceRecorder';
 import axios from 'axios';
 import MapPage from '../Map/MapPage';
 import './MainPage.css';
